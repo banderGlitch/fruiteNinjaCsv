@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0a12" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Hand Slice — Fruit Ninja CV</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="start-screen" class="screen">
+        <h1>Hand Slice</h1>
+        <p class="subtitle">Slice fruit with your index finger — webcam required</p>
+        <ul class="tips">
+          <li>Use Chrome or Safari on mobile</li>
+          <li>Good lighting, plain background</li>
+          <li>Hold phone steady, extend index finger</li>
+        </ul>
+        <button id="start-btn" type="button">Tap to start camera</button>
+        <p id="start-error" class="error hidden"></p>
+      </div>
+
+      <div id="loading-screen" class="screen hidden">
+        <div class="spinner"></div>
+        <p>Loading hand tracking…</p>
+      </div>
+
+      <div id="game-screen" class="screen hidden">
+        <video id="video" playsinline muted autoplay></video>
+        <canvas id="canvas"></canvas>
+        <div id="hud">
+          <div id="score">Score: 0</div>
+          <div id="combo" class="hidden"></div>
+          <div id="lives"></div>
+        </div>
+        <div id="hint" class="hidden">Show your hand to the camera</div>
+        <div id="game-over" class="overlay hidden">
+          <h2>Game Over</h2>
+          <p id="final-score"></p>
+          <button id="restart-btn" type="button">Play again</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

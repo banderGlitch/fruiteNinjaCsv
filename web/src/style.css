@@ -1,0 +1,216 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0a12;
+  color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#start-screen h1 {
+  font-size: clamp(2rem, 8vw, 3rem);
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #6ee7a0, #38bdf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  opacity: 0.85;
+  margin-bottom: 1.5rem;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.tips {
+  list-style: none;
+  text-align: left;
+  margin-bottom: 2rem;
+  opacity: 0.75;
+  font-size: 0.9rem;
+  max-width: 300px;
+}
+
+.tips li {
+  margin-bottom: 0.5rem;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.tips li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #6ee7a0;
+}
+
+#start-btn,
+#restart-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0a0a12;
+  background: linear-gradient(135deg, #6ee7a0, #38bdf8);
+  cursor: pointer;
+  min-width: 220px;
+  min-height: 52px;
+}
+
+#start-btn:active,
+#restart-btn:active {
+  transform: scale(0.97);
+}
+
+.error {
+  margin-top: 1rem;
+  color: #f87171;
+  font-size: 0.85rem;
+  max-width: 320px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #6ee7a0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#game-screen {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+}
+
+#video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  z-index: 0;
+}
+
+#canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  padding: max(12px, env(safe-area-inset-top)) 16px 16px;
+}
+
+#score {
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+#combo {
+  margin-top: 4px;
+  color: #fde047;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+#lives {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 16px;
+  display: flex;
+  gap: 6px;
+  font-size: 1.4rem;
+}
+
+#hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 24px;
+}
+
+.overlay h2 {
+  font-size: 2rem;
+  color: #f87171;
+}
+
+.overlay p {
+  font-size: 1.2rem;
+}
+
+#restart-btn {
+  pointer-events: auto;
+}
