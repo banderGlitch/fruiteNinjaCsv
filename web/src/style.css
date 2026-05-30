@@ -44,10 +44,20 @@ body {
 #start-screen h1 {
   font-size: clamp(2rem, 8vw, 3rem);
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #6ee7a0, #38bdf8);
+  background: linear-gradient(135deg, #6ee7a0, #38bdf8, #c084fc);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from {
+    filter: drop-shadow(0 0 8px rgba(110, 231, 160, 0.3));
+  }
+  to {
+    filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));
+  }
 }
 
 .subtitle {
@@ -158,6 +168,13 @@ body {
   font-size: clamp(1.1rem, 4vw, 1.5rem);
   font-weight: 700;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+#best-score {
+  margin-top: 2px;
+  font-size: clamp(0.75rem, 3vw, 0.9rem);
+  opacity: 0.75;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
 #combo {
