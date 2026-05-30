@@ -167,13 +167,97 @@ body {
   font-size: 0.95rem;
 }
 
-#lives {
+.calibrate-panel {
   position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  right: 16px;
-  display: flex;
-  gap: 6px;
+  left: 50%;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 5;
+  width: min(340px, 92vw);
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(110, 231, 160, 0.35);
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  pointer-events: none;
+  text-align: center;
+}
+
+#calibrate-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+#calibrate-hint {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.progress-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6ee7a0, #38bdf8);
+  border-radius: 999px;
+  transition: width 0.08s linear;
+}
+
+.go-flash {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  font-size: clamp(2.5rem, 12vw, 4rem);
+  font-weight: 800;
+  color: #6ee7a0;
+  text-shadow: 0 4px 24px rgba(110, 231, 160, 0.6);
+  pointer-events: none;
+  animation: pop 0.9s ease-out forwards;
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(1);
+  }
+}
+
+.fab-restart {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 4;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
   font-size: 1.4rem;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  pointer-events: auto;
+}
+
+.fab-restart:active {
+  transform: scale(0.94);
 }
 
 #hint {
@@ -209,8 +293,4 @@ body {
 
 .overlay p {
   font-size: 1.2rem;
-}
-
-#restart-btn {
-  pointer-events: auto;
 }

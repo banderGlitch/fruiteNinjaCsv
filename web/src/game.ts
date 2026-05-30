@@ -32,7 +32,6 @@ export type ScorePopup = {
 
 export type GameState = {
   score: number;
-  lives: number;
   gameOver: boolean;
   fruits: Fruit[];
   popups: ScorePopup[];
@@ -41,6 +40,9 @@ export type GameState = {
   combo: number;
   lastSliceTime: number;
 };
+
+/** Set false to re-enable lives and game-over. */
+export const TEST_MODE = true;
 
 function scaleRadius(base: number, w: number): number {
   return Math.round(base * Math.min(1.2, Math.max(0.55, w / 720)));
@@ -122,7 +124,6 @@ export class FruitNinjaGame {
   private freshState(): GameState {
     return {
       score: 0,
-      lives: 5,
       gameOver: false,
       fruits: [],
       popups: [],
@@ -182,9 +183,9 @@ export class FruitNinjaGame {
 
       if (fruit.y - fruit.radius > this.height + 40 && fruit.kind !== "bomb") {
         st.fruits = st.fruits.filter((f) => f !== fruit);
-        st.lives -= 1;
-        st.combo = 0;
-        if (st.lives <= 0) st.gameOver = true;
+        if (!TEST_MODE) {
+          st.combo = 0;
+        }
       } else if (
         fruit.y + fruit.radius < -60 ||
         fruit.x < -80 ||
@@ -203,7 +204,6 @@ export class FruitNinjaGame {
     fruit.sliceTime = 0;
 
     if (fruit.kind === "bomb") {
-      st.lives -= 1;
       st.combo = 0;
       st.popups.push({
         x: fruit.x,
@@ -213,7 +213,6 @@ export class FruitNinjaGame {
         born: now,
         ttl: 700,
       });
-      if (st.lives <= 0) st.gameOver = true;
       return;
     }
 
@@ -238,11 +237,10 @@ export class FruitNinjaGame {
     ctx: CanvasRenderingContext2D,
     trail: ReadonlyArray<[number, number]>,
   ): void {
-    ctx.clearRect(0, 0, this.width, this.height);
-    this.drawTrail(ctx, trail);
     for (const fruit of this.state.fruits) {
       this.drawFruit(ctx, fruit);
     }
+    this.drawTrail(ctx, trail);
     this.drawPopups(ctx);
   }
 
@@ -340,8 +338,4 @@ export class FruitNinjaGame {
       ctx.fillText(p.text, p.x - 20, p.y - yOff);
     }
   }
-}
-
-export function renderLives(count: number): string {
-  return "❤️".repeat(Math.max(0, count));
 }

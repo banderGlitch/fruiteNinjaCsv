@@ -1,5 +1,7 @@
-import { FruitNinjaGame, renderLives } from "./game";
-import { HandTracker } from "./handTracker";
+import { FruitNinjaGame } from "./game";
+import { drawHandSkeleton, HandTracker, type HandFrame } from "./handTracker";
+
+type Phase = "calibrate" | "playing";
 
 const startScreen = document.getElementById("start-screen")!;
 const loadingScreen = document.getElementById("loading-screen")!;
@@ -10,20 +12,24 @@ const video = document.getElementById("video") as HTMLVideoElement;
 const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const scoreEl = document.getElementById("score")!;
 const comboEl = document.getElementById("combo")!;
-const livesEl = document.getElementById("lives")!;
-const hintEl = document.getElementById("hint")!;
-const gameOverEl = document.getElementById("game-over")!;
-const finalScoreEl = document.getElementById("final-score")!;
+const calibratePanel = document.getElementById("calibrate-panel")!;
+const calibrateTitle = document.getElementById("calibrate-title")!;
+const calibrateHint = document.getElementById("calibrate-hint")!;
+const calibrateProgress = document.getElementById("calibrate-progress")!;
+const goFlash = document.getElementById("go-flash")!;
 const restartBtn = document.getElementById("restart-btn") as HTMLButtonElement;
 
 const ctx = canvas.getContext("2d")!;
 const tracker = new HandTracker();
 let game: FruitNinjaGame | null = null;
+let phase: Phase = "calibrate";
 let trail: Array<[number, number]> = [];
 const TRAIL_MAX = 20;
 let rafId = 0;
 let lastFrame = performance.now();
 let stream: MediaStream | null = null;
+let readyFrames = 0;
+const READY_FRAMES_NEEDED = 24;
 
 function show(el: HTMLElement): void {
   el.classList.remove("hidden");
@@ -81,11 +87,40 @@ function syncCanvasSize(): { w: number; h: number } {
   return { w, h };
 }
 
-function updateHud(handVisible: boolean): void {
+function isReadyPose(frame: HandFrame): boolean {
+  return frame.handVisible && frame.handInFrame && frame.indexExtended;
+}
+
+function updateCalibrateUi(frame: HandFrame): void {
+  const pct = Math.min(100, Math.round((readyFrames / READY_FRAMES_NEEDED) * 100));
+  calibrateProgress.style.width = `${pct}%`;
+
+  if (!frame.handVisible) {
+    calibrateTitle.textContent = "Show your full hand";
+    calibrateHint.textContent = "Keep your whole hand inside the frame";
+    return;
+  }
+
+  if (!frame.handInFrame) {
+    calibrateTitle.textContent = "Move hand into view";
+    calibrateHint.textContent = "Wrist and fingers should all be visible";
+    return;
+  }
+
+  if (!frame.indexExtended) {
+    calibrateTitle.textContent = "Point your index finger";
+    calibrateHint.textContent = "Extend index finger — other fingers relaxed";
+    return;
+  }
+
+  calibrateTitle.textContent = "Hold index finger…";
+  calibrateHint.textContent = `Starting in ${Math.ceil((READY_FRAMES_NEEDED - readyFrames) / 24)}s`;
+}
+
+function updateHud(): void {
   if (!game) return;
   const st = game.state;
   scoreEl.textContent = `Score: ${st.score}`;
-  livesEl.textContent = renderLives(st.lives);
 
   if (st.combo > 1) {
     comboEl.textContent = `Combo x${st.combo}!`;
@@ -93,15 +128,35 @@ function updateHud(handVisible: boolean): void {
   } else {
     hide(comboEl);
   }
+}
 
-  if (handVisible) hide(hintEl);
-  else show(hintEl);
+function beginPlaying(): void {
+  phase = "playing";
+  readyFrames = 0;
+  trail = [];
+  hide(calibratePanel);
+  show(restartBtn);
+  show(goFlash);
+  window.setTimeout(() => hide(goFlash), 900);
+}
 
-  if (st.gameOver) {
-    finalScoreEl.textContent = `Final score: ${st.score}`;
-    show(gameOverEl);
-  } else {
-    hide(gameOverEl);
+function enterCalibrate(): void {
+  phase = "calibrate";
+  readyFrames = 0;
+  trail = [];
+  game?.reset();
+  show(calibratePanel);
+  hide(restartBtn);
+  calibrateProgress.style.width = "0%";
+}
+
+function updateTrail(frame: HandFrame): void {
+  const canSlice = frame.handVisible && frame.indexExtended;
+  if (canSlice) {
+    trail.push([frame.fingertip.x, frame.fingertip.y]);
+    if (trail.length > TRAIL_MAX) trail.shift();
+  } else if (trail.length > 0) {
+    trail.shift();
   }
 }
 
@@ -113,21 +168,37 @@ function loop(): void {
   lastFrame = now;
 
   const { w, h } = syncCanvasSize();
-  const tip = tracker.fingertip(video, w, h);
+  const frame = tracker.detect(video, w, h);
 
-  if (tip.visible) {
-    trail.push([tip.x, tip.y]);
-    if (trail.length > TRAIL_MAX) trail.shift();
-  } else if (trail.length > 0) {
-    trail.shift();
+  ctx.clearRect(0, 0, w, h);
+
+  if (phase === "calibrate") {
+    drawHandSkeleton(ctx, frame, { highlightIndex: true, dim: 1 });
+
+    if (isReadyPose(frame)) {
+      readyFrames += 1;
+      if (readyFrames >= READY_FRAMES_NEEDED) {
+        beginPlaying();
+      }
+    } else {
+      readyFrames = Math.max(0, readyFrames - 2);
+    }
+
+    updateCalibrateUi(frame);
+  } else {
+    drawHandSkeleton(ctx, frame, {
+      highlightIndex: frame.indexExtended,
+      dim: 0.45,
+    });
+    updateTrail(frame);
+
+    if (!game.state.gameOver) {
+      game.update(trail, dt);
+    }
+
+    game.draw(ctx, trail);
+    updateHud();
   }
-
-  if (!game.state.gameOver) {
-    game.update(trail, dt);
-  }
-
-  game.draw(ctx, trail);
-  updateHud(tip.visible);
 
   rafId = requestAnimationFrame(loop);
 }
@@ -155,16 +226,14 @@ async function bootGame(): Promise<void> {
 
   const { w, h } = syncCanvasSize();
   game = new FruitNinjaGame(w, h);
-  trail = [];
+  enterCalibrate();
   lastFrame = performance.now();
   stopLoop();
   rafId = requestAnimationFrame(loop);
 }
 
 function restartGame(): void {
-  game?.reset();
-  trail = [];
-  hide(gameOverEl);
+  enterCalibrate();
 }
 
 function teardown(): void {
@@ -193,7 +262,6 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// Telegram / mobile: prevent pull-to-refresh while playing
 document.body.addEventListener(
   "touchmove",
   (e) => {

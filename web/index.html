@@ -18,9 +18,9 @@
         <h1>Hand Slice</h1>
         <p class="subtitle">Slice fruit with your index finger — webcam required</p>
         <ul class="tips">
-          <li>Use Chrome or Safari on mobile</li>
-          <li>Good lighting, plain background</li>
-          <li>Hold phone steady, extend index finger</li>
+          <li>Show your <strong>full hand</strong> first</li>
+          <li>Then <strong>point index finger</strong> to start</li>
+          <li>Good lighting helps tracking</li>
         </ul>
         <button id="start-btn" type="button">Tap to start camera</button>
         <p id="start-error" class="error hidden"></p>
@@ -37,14 +37,21 @@
         <div id="hud">
           <div id="score">Score: 0</div>
           <div id="combo" class="hidden"></div>
-          <div id="lives"></div>
         </div>
-        <div id="hint" class="hidden">Show your hand to the camera</div>
-        <div id="game-over" class="overlay hidden">
-          <h2>Game Over</h2>
-          <p id="final-score"></p>
-          <button id="restart-btn" type="button">Play again</button>
+
+        <div id="calibrate-panel" class="calibrate-panel hidden">
+          <p id="calibrate-title">Show your full hand</p>
+          <p id="calibrate-hint">Keep your whole hand inside the frame</p>
+          <div class="progress-track">
+            <div id="calibrate-progress" class="progress-fill"></div>
+          </div>
         </div>
+
+        <div id="go-flash" class="go-flash hidden">Slice!</div>
+
+        <button id="restart-btn" type="button" class="fab-restart hidden" title="Recalibrate">
+          ↺
+        </button>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
