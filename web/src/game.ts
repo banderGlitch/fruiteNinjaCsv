@@ -45,11 +45,34 @@ const FRUIT_META: Record<
   },
 };
 
-/** Higher launch + lighter gravity = fruit flies further up. */
-const LAUNCH_VY_MIN = 22;
-const LAUNCH_VY_MAX = 30;
-const GRAVITY_BASE = 0.26;
-const AIR_DRAG = 0.998;
+/** Gravity per frame (~60fps). Launch speed is computed from screen height. */
+const GRAVITY_BASE = 0.34;
+const AIR_DRAG = 0.997;
+
+function topSafeZone(height: number): number {
+  return Math.max(80, height * 0.11);
+}
+
+/** Initial upward speed so the fruit apex stays inside the visible play area. */
+function launchVyForPeak(
+  startY: number,
+  peakY: number,
+  gravity: number,
+): number {
+  const dy = Math.max(40, startY - peakY);
+  // Euler integration overshoots slightly — scale down a bit.
+  return -Math.sqrt(2 * gravity * dy) * 0.9;
+}
+
+function randomPeakY(
+  height: number,
+  radius: number,
+  topSafe: number,
+): number {
+  const minPeak = topSafe + radius + 8;
+  const maxPeak = height * 0.42 - radius;
+  return minPeak + Math.random() * Math.max(48, maxPeak - minPeak);
+}
 
 export type Fruit = {
   kind: FruitKind;
@@ -107,7 +130,13 @@ function scaleRadius(base: number, w: number): number {
   return Math.round(base * Math.min(1.2, Math.max(0.55, w / 720)));
 }
 
-function spawnFruit(width: number, height: number, kind?: FruitKind): Fruit {
+function spawnFruit(
+  width: number,
+  height: number,
+  gravity: number,
+  topSafe: number,
+  kind?: FruitKind,
+): Fruit {
   const roll = Math.random();
   const picked: FruitKind =
     kind ??
@@ -121,19 +150,21 @@ function spawnFruit(width: number, height: number, kind?: FruitKind): Fruit {
 
   const meta = FRUIT_META[picked];
   const r = scaleRadius(meta.radius, width);
-  const x = r + 24 + Math.random() * (width - 2 * r - 48);
+  const x = r + 24 + Math.random() * Math.max(40, width - 2 * r - 48);
   const y = height + r + 8;
-  const speed = height / 720;
+  const peakY = randomPeakY(height, r, topSafe);
+  const vy = launchVyForPeak(y, peakY, gravity);
+  const maxVx = Math.max(1.8, width * 0.011);
 
   return {
     kind: picked,
     x,
     y,
-    vx: (Math.random() - 0.5) * 7.5 * speed,
-    vy: -(LAUNCH_VY_MIN + Math.random() * (LAUNCH_VY_MAX - LAUNCH_VY_MIN)) * speed,
+    vx: (Math.random() - 0.5) * maxVx * 2,
+    vy,
     radius: r,
     rotation: Math.random() * Math.PI * 2,
-    spin: (Math.random() - 0.5) * 0.14,
+    spin: (Math.random() - 0.5) * 0.12,
     sliced: false,
     sliceTime: 0,
     pulse: Math.random() * Math.PI * 2,
@@ -179,13 +210,21 @@ export class FruitNinjaGame {
   private width: number;
   private height: number;
   state: GameState;
-  private gravity: number;
+  private gravity = GRAVITY_BASE;
+  private topSafe = 80;
 
   constructor(width: number, height: number) {
     this.width = width;
     this.height = height;
-    this.gravity = GRAVITY_BASE * (height / 720);
+    this.applyScreenMetrics(width, height);
     this.state = this.freshState();
+  }
+
+  private applyScreenMetrics(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+    this.gravity = GRAVITY_BASE * Math.min(1.1, Math.max(0.9, height / 720));
+    this.topSafe = topSafeZone(height);
   }
 
   private freshState(): GameState {
@@ -209,9 +248,7 @@ export class FruitNinjaGame {
   }
 
   resize(width: number, height: number): void {
-    this.width = width;
-    this.height = height;
-    this.gravity = GRAVITY_BASE * (height / 720);
+    this.applyScreenMetrics(width, height);
   }
 
   private spawnWave(now: number): void {
@@ -223,18 +260,44 @@ export class FruitNinjaGame {
       const slots = 3;
       const gap = this.width / (slots + 1);
       for (let i = 0; i < slots; i++) {
-        const f = spawnFruit(this.width, this.height, kinds[i % kinds.length]);
-        f.x = gap * (i + 1) + (Math.random() - 0.5) * 40;
-        f.vy *= 1.08;
+        const f = spawnFruit(
+          this.width,
+          this.height,
+          this.gravity,
+          this.topSafe,
+          kinds[i % kinds.length],
+        );
+        f.x = gap * (i + 1) + (Math.random() - 0.5) * 30;
         st.fruits.push(f);
       }
       st.lastSpawn = now;
       return;
     }
 
-    st.fruits.push(spawnFruit(this.width, this.height));
+    st.fruits.push(
+      spawnFruit(this.width, this.height, this.gravity, this.topSafe),
+    );
     st.lastSpawn = now;
     st.spawnInterval = Math.max(420, st.spawnInterval - 3);
+  }
+
+  private clampFruitInBounds(fruit: Fruit): void {
+    const left = fruit.radius + 4;
+    const right = this.width - fruit.radius - 4;
+
+    if (fruit.x < left) {
+      fruit.x = left;
+      fruit.vx = Math.abs(fruit.vx) * 0.65;
+    } else if (fruit.x > right) {
+      fruit.x = right;
+      fruit.vx = -Math.abs(fruit.vx) * 0.65;
+    }
+
+    const ceiling = this.topSafe + fruit.radius;
+    if (fruit.y < ceiling && fruit.vy < 0) {
+      fruit.y = ceiling;
+      fruit.vy = Math.abs(fruit.vy) * 0.25;
+    }
   }
 
   update(trail: ReadonlyArray<[number, number]>, dtMs: number): void {
@@ -281,15 +344,12 @@ export class FruitNinjaGame {
       fruit.x += fruit.vx;
       fruit.y += fruit.vy;
       fruit.rotation += fruit.spin;
+      this.clampFruitInBounds(fruit);
 
       if (fruit.y - fruit.radius > this.height + 40 && fruit.kind !== "bomb") {
         st.fruits = st.fruits.filter((f) => f !== fruit);
         if (!TEST_MODE) st.combo = 0;
-      } else if (
-        fruit.y + fruit.radius < -120 ||
-        fruit.x < -100 ||
-        fruit.x > this.width + 100
-      ) {
+      } else if (fruit.x < -120 || fruit.x > this.width + 120) {
         st.fruits = st.fruits.filter((f) => f !== fruit);
       }
     }
